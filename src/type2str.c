@@ -2,7 +2,7 @@
 /* $Id$ */
 
 /*  libticalcs - Ti Calculator library, a part of the TiLP project
- *  Copyright (C) 1999-2004  Romain Lievin
+ *  Copyright (C) 1999-2005  Romain Liévin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,24 +19,48 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include <stdio.h>
 #include <string.h>
-
 #include "gettext.h"
+#include "ticalcs.h"
 
-#include "calc_def.h"
-
-
-TIEXPORT const char *TICALL ticalc_screen_to_string(TicalcScreenFormat format)
+/**
+ * ticalcs_model_to_string:
+ * @model: a calculator model.
+ *
+ * Do an integer to string conversion.
+ *
+ * Return value: a string like "TI92+".
+ **/
+TIEXPORT const char *TICALL ticalcs_model_to_string(CalcModel model)
 {
-  	switch (format) {
+	return tifiles_model_to_string(model);
+}
+
+/**
+ * ticalcs_string_to_model:
+ * @str: a calculator model as string like "TI92".
+ *
+ * Do a string to integer conversion.
+ *
+ * Return value: a calculator model.
+ **/
+TIEXPORT CalcModel TICALL ticalcs_string_to_model(const char *str)
+{
+	return tifiles_string_to_model(str);
+}
+
+
+TIEXPORT const char *TICALL ticalcs_scrfmt_to_string(CalcScreenFormat format)
+{
+  	switch (format) 
+	{
   	case SCREEN_FULL: return _("full");
   	case SCREEN_CLIPPED: return _("clipped");
   	default: return _("unknown");
   	}
 }
 
-TIEXPORT TicalcScreenFormat TICALL ticalc_string_to_screen(const char *str)
+TIEXPORT CalcScreenFormat TICALL ticalc_string_to_scrfmt(const char *str)
 {
   	if(!strcmp(str, _("full")))
   		return SCREEN_FULL;
@@ -47,16 +71,17 @@ TIEXPORT TicalcScreenFormat TICALL ticalc_string_to_screen(const char *str)
 }
 
 
-TIEXPORT const char *TICALL ticalc_path_to_string(TicalcPathType type)
+TIEXPORT const char *TICALL ticalc_pathtype_to_string(CalcPathType type)
 {
-  	switch (type) {
+  	switch (type) 
+	{
   	case PATH_FULL: return _("full");
   	case PATH_LOCAL: return _("local");
   	default: return _("unknown");
   	}
 }
 
-TIEXPORT TicalcPathType TICALL ticalc_string_to_path(const char *str)
+TIEXPORT CalcPathType TICALL ticalc_string_to_pathtype(const char *str)
 {
   	if(!strcmp(str, _("full")))
   		return PATH_FULL;
@@ -67,13 +92,22 @@ TIEXPORT TicalcPathType TICALL ticalc_string_to_path(const char *str)
 }
 
 
-
-
-TIEXPORT const char *TICALL ticalc_action_to_string(TicalcAction action)
+TIEXPORT const char *TICALL ticalc_memtype_to_string(CalcMemType type)
 {
-  	switch (action) {
-  	case ACT_SKIP: return _("skip");
-  	case ACT_OVER: return _("overwrite");
-	default: return _("unknown");
+  	switch (type) 
+	{
+  	case MEMORY_FREE: return _("free");
+  	case MEMORY_USED: return _("used");
+  	default: return _("unknown");
   	}
+}
+
+TIEXPORT CalcMemType TICALL ticalc_string_to_memtype(const char *str)
+{
+  	if(!strcmp(str, _("free")))
+  		return MEMORY_FREE;
+  	else if(!strcmp(str, _("used")))
+  		return MEMORY_USED;
+  	
+  	return MEMORY_NONE;
 }

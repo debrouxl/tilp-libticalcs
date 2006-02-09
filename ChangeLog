@@ -1,13 +1,41 @@
 SubVersion: $Id$
 
+Set svn:eol property to native on all files
+	
+To do : 
+- key codes for TI8x (check)
+//- manage ERR packets which can be received at any time
+- import Kevin's code for UTF16 <-> TI keys (tiemu3) ?
+
 Log:
 
-- 20/07/2005, version 4.6.1: roms
-	Fixed new gcc4.0 warnings.
+- 23/01/2006, version 0.0.4: roms
+	- modified to follow ticables2 API changes.
+	- fixed critical bug in ticalcs2.pc.in: the header location was include/tilp instead of include/tilp2
+
+- 24/09/2005, version 0.0.3: roms
+	- fixed critical bug in dbus_send: use len instead of length which makes 64KB blocks copied as 0B blocks :-(
+
+- 14/09/2005, version 0.0.2: roms
+	- fixed/updated recv_var_ns routines
+	- fixed build of /docs (Tijl)
+	- TI73/8X+ auto-probe support updated. Calculator probing updated.
+		Note: host check has been disabled in dbus_recv_ because ticalcs_probe 
+		may be used on any TI9x calc.
+	- fixed non-exported symbol because exportX.h didn't include config.h (fvisibility).
+
+- 15/05/2005, version 0.0.1: roms
+	- logging reworked (use glib)
+	- a single public header with functions & defs, others are private
+	- slightly fixed namespace sheme
+	- use strong types such as TiCalcModel, ...
+	- glib is used for logging (not very much for strings)
+	- documentation system has been changed
+	- functions pointers have been removed
+	- library has been fully documented
+	- decreased number of headers to include (1 or 3)
 	
-- 12/07/2005, version 4.6.0: roms
-	Fixed possible buffer overflow with recv_packet (usually occurs with 
-	virtual links because the received length is invalid).
+====[ Version II ]====
 
 - 24/04/2005, version 4.5.9: roms
 	Adding new function for non-silent variable receiving support.

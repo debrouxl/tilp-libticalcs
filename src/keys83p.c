@@ -2,7 +2,7 @@
 /* $Id$ */
 
 /*  libticalcs - Ti Calculator library, a part of the TiLP project
- *  Copyright (C) 1999-2004  Romain Lievin
+ *  Copyright (C) 1999-2005  Romain Liévin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include "calc_def.h"
+#include "ticalcs.h"
 
 /*
   Conversion of an ASCII code into a TI key
@@ -28,7 +28,8 @@
   From 0x00 to 0x80, ASCII codes
   From 0x80, I do not know where I can put them...
 */
-const TicalcKey TI83P_KEYS[] = {
+const CalcKey TI83P_KEYS[] = 
+{
 /* 0x00 */
   {"", "", 0, "", 0, "", 0, "", 0, "", 0},
   {"", "", 0, "", 0, "", 0, "", 0, "", 0},

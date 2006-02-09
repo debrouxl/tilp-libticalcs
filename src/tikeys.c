@@ -2,7 +2,7 @@
 /* $Id$ */
 
 /*  libticalcs - Ti Calculator library, a part of the TiLP project
- *  Copyright (C) 1999-2004  Romain Lievin
+ *  Copyright (C) 1999-2005  Romain Liévin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,36 +19,68 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include "calc_def.h"
-#include "headers.h"
+#include "ticalcs.h"
 
 #include "keys73.h"
+#include "keys83.h"
 #include "keys83p.h"
+#include "keys86.h"
 #include "keys89.h"
 #include "keys92p.h"
 
-extern const TicalcKey TI73_KEYS[];
-extern const TicalcKey TI83P_KEYS[];
-extern const TicalcKey TI89_KEYS[];
-extern const TicalcKey TI92P_KEYS[];
+extern const CalcKey TI73_KEYS[];
+extern const CalcKey TI83P_KEYS[];
+extern const CalcKey TI89_KEYS[];
+extern const CalcKey TI92P_KEYS[];
 
-
-TIEXPORT TicalcKey TICALL ticalc_73_keys(unsigned char ascii_code)
+/**
+ * ticalcs_keys_73:
+ * @code: an ASCII character
+ *
+ * Conversion of an ASCII code into a TI key.
+ *
+ * Return value: a TI key.
+ **/
+TIEXPORT CalcKey TICALL ticalcs_keys_73(unsigned char ascii_code)
 {
   return TI73_KEYS[ascii_code];
 }
 
-TIEXPORT TicalcKey TICALL ticalc_83p_keys(unsigned char ascii_code)
+/**
+ * ticalcs_keys_83p:
+ * @code: an ASCII character
+ *
+ * Conversion of an ASCII code into a TI key.
+ *
+ * Return value: a TI key.
+ **/
+TIEXPORT CalcKey TICALL ticalcs_keys_83p(unsigned char ascii_code)
 {
   return TI83P_KEYS[ascii_code];
 }
 
-TIEXPORT TicalcKey TICALL ticalc_89_keys(unsigned char ascii_code)
+/**
+ * ticalcs_keys_89:
+ * @code: an ASCII character
+ *
+ * Conversion of an ASCII code into a TI key.
+ *
+ * Return value: a TI key.
+ **/
+TIEXPORT CalcKey TICALL ticalcs_keys_89(unsigned char ascii_code)
 {
   return TI89_KEYS[ascii_code];
 }
 
-TIEXPORT TicalcKey TICALL ticalc_92p_keys(unsigned char ascii_code)
+/**
+ * ticalcs_keys_92p:
+ * @code: an ASCII character
+ *
+ * Conversion of an ASCII code into a TI key.
+ *
+ * Return value: a TI key.
+ **/
+TIEXPORT CalcKey TICALL ticalcs_keys_92p(unsigned char ascii_code)
 {
   return TI92P_KEYS[ascii_code];
 }

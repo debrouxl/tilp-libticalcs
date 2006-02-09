@@ -2,7 +2,7 @@
 /* $Id$ */
 
 /*  libticalcs - Ti Calculator library, a part of the TiLP project
- *  Copyright (C) 1999-2004  Romain Lievin
+ *  Copyright (C) 1999-2005  Romain Liévin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include "calc_def.h"
+#include "ticalcs.h"
 
 /*
   Conversion of an PC scancode into an TI scancode.
@@ -32,7 +32,8 @@
 
   The array can be used in reverse order too, at least for the first column...
 */
-const TicalcKey TI92P_KEYS[] = {
+const CalcKey TI92P_KEYS[] = 
+{
 /* 0x00, 0-15 */
   {"", "", 0, "", 0, "", 0, "", 0, "", 0},
   {"", "", 0, "", 0, "", 0, "", 0, "", 0},
@@ -321,7 +322,7 @@ const TicalcKey TI92P_KEYS[] = {
   {"APPS", "APPS", 265, "APPS", 265, "SWITCH", 4361, "", 8457, "",
    0},
   {"MODE", "MODE", 266, "MODE", 266, "MODE", 266, "", 8458, "", 0},
-  {"", "", 0, "", 0, "", 0, "", 0},
+  {"ON", "ON", 267, "OFF", 267, "OFF", 267, "", 0},
   {"F1", "F1", 268, "F1", 268, "F1", 8460, "", 0},
   {"F2", "F2", 269, "F2", 269, "F2", 8461, "", 0},
   {"F3", "F3", 270, "F3", 270, "F3", 8462, "", 0},
@@ -331,7 +332,7 @@ const TicalcKey TI92P_KEYS[] = {
   {"F6", "F6", 273, "F6", 273, "F6", 8465, "", 0},
   {"F7", "F7", 274, "F7", 274, "F7", 8466, "", 0},
   {"F8", "F8", 275, "F8", 275, "F8", 8467, "", 0},
-  {"", "", 0, "", 0, "", 0, "", 0},
+  {"CHS?", "CHS?", 276, "", 0, "", 0, "", 0},
   {"", "", 0, "", 0, "", 0, "", 0},
   {"", "", 0, "", 0, "", 0, "", 0},
   {"", "", 0, "", 0, "", 0, "", 0},

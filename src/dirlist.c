@@ -2,7 +2,7 @@
 /* $Id$ */
 
 /*  libticalcs - Ti Calculator library, a part of the TiLP project
- *  Copyright (C) 1999-2004  Romain Lievin
+ *  Copyright (C) 1999-2005  Romain Liévin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,368 +20,347 @@
  */
 
 /*
-  Utility functions for directory list (tree)
-  They support both format (old and new format introduced in v4.4.3)
+	Utility functions for directory list (tree mangement).
 */
 
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "gettext.h"
+#include "ticalcs.h"
+#include "logging.h"
 
-#include "calc_def.h"
-#include "headers.h"
-#include "tnode.h"
-#include "printl.h"
-
-static tboolean free_varentry(TNode * node, tpointer data)
+static tboolean free_varentry(TNode* node, tpointer data)
 {
-  if (node)
-    free(node->data);
-  return FALSE;
+#if 0
+	if(node)
+	{
+		printf("<%p> ", node);
+		if(node->data)
+		{
+			VarEntry* ve = node->data;
+
+			printf("<<%p>> ", ve);
+			printf("<%s>\n", tifiles_transcode_varname_static(CALC_TI84P, ve->name, ve->type));
+		}
+	}
+#else
+	/*
+	if (node)
+		if(node->data)
+			tifiles_ve_delete(node->data);
+			*/
+#endif
+
+	return FALSE;
 }
 
-TIEXPORT void TICALL ticalc_dirlist_destroy(TNode ** tree)
+/**
+ * ticalcs_dirlist_destroy:
+ * @tree: the tree to destroy (var or app).
+ *
+ * Destroy the whole tree create by #ticalcs_calc_get_dirlist.
+ *
+ * Return value: none.
+ **/
+TIEXPORT void TICALL ticalcs_dirlist_destroy(TNode** tree)
 {
-  if (*tree != NULL) {
-    t_node_traverse(*tree, T_IN_ORDER, T_TRAVERSE_ALL, -1,
-		    free_varentry, NULL);
-    t_node_destroy(*tree);
-    *tree = NULL;
-  }
+	if (*tree != NULL) 
+	{
+		t_node_traverse(*tree, T_IN_ORDER, G_TRAVERSE_LEAVES, -1, free_varentry, NULL);
+		t_node_destroy(*tree);
+		*tree = NULL;
+	}
 }
 
-
-static void dirlist_display_vars(TNode * tree)
+static void dirlist_display_vars(TNode* tree)
 {
-  int i, j, k;
   TNode *vars = tree;
+  TreeInfo *info = (TreeInfo *)(tree->data);
+  int i, j, k;
+  char trans[10];
 
-  printl2(0,   "+------------------+----------+----+----+----------+----------+\n");
-  printl2(0, _("| B. name          | T. name  |Attr|Type| Size     | Parent   |\n"));
-  printl2(0,   "+------------------+----------+----+----+----------+----------+\n");
+  printf(  "+------------------+----------+----+----+----------+----------+\n");
+  printf(_("| B. name          | T. name  |Attr|Type| Size     | Folder   |\n"));
+  printf(  "+------------------+----------+----+----+----------+----------+\n");
 
   for (i = 0; i < (int)t_node_n_children(vars); i++)	// parse folders
   {
     TNode *parent = t_node_nth_child(vars, i);
-    TiVarEntry *fe = (TiVarEntry *) (parent->data);
+    VarEntry *fe = (VarEntry *) (parent->data);
 
-    if (fe != NULL) {
-      printl2(0, "| ");
+    if (fe != NULL) 
+	{
+	  tifiles_transcode_varname (info->model, trans, fe->name, fe->type);
+
+      printf("| ");
       for (k = 0; k < 8; k++)
-	printl2(0, "%02X", (uint8_t) (fe->name)[k]);
-      printl2(0, " | ");	
-      printl2(0, "%8s", fe->trans);
-      printl2(0, " | ");
-      printl2(0, "%2i", fe->attr);
-      printl2(0, " | ");
-      printl2(0, "%02X", fe->type);
-      printl2(0, " | ");
-      printl2(0, "%08X", fe->size);
-      printl2(0, " | ");
-      printl2(0, "%8s", fe->folder);
-      printl2(0, " |\n");
+		printf("%02X", (uint8_t) (fe->name)[k]);
+      printf(" | ");	
+      printf("%8s", trans);
+      printf(" | ");
+      printf("%2i", fe->attr);
+      printf(" | ");
+      printf("%02X", fe->type);
+      printf(" | ");
+      printf("%08X", fe->size);
+      printf(" | ");
+      printf("%8s", fe->folder);
+      printf(" |");
+	  printf("\n");
     }
 
     for (j = 0; j < (int)t_node_n_children(parent); j++)	//parse variables
     {
       TNode *child = t_node_nth_child(parent, j);
-      TiVarEntry *ve = (TiVarEntry *) (child->data);
+      VarEntry *ve = (VarEntry *) (child->data);
 
-      printl2(0, "| ");
-      for (k = 0; k < 8; k++) {
-	printl2(0, "%02X", (uint8_t) (ve->name)[k]);
-      }
-      printl2(0, " | ");
-      printl2(0, "%8s", ve->trans);
-      printl2(0, " | ");
-      printl2(0, "%2i", ve->attr);
-      printl2(0, " | ");
-      printl2(0, "%02X", ve->type);
-      printl2(0, " | ");
-      printl2(0, "%08X", ve->size);
-      printl2(0, " | ");
-      printl2(0, "%8s", ve->folder);
-      printl2(0, " |\n");
+	  tifiles_transcode_varname (info->model, trans, ve->name, ve->type);
+
+      printf("| ");
+      for (k = 0; k < 8; k++) 
+		printf("%02X", (uint8_t) (ve->name)[k]);
+      printf(" | ");
+      printf("%8s", trans);
+      printf(" | ");
+      printf("%2i", ve->attr);
+      printf(" | ");
+      printf("%02X", ve->type);
+      printf(" | ");
+      printf("%08X", ve->size);
+      printf(" | ");
+      printf("%8s", ve->folder);
+      printf(" |");
+	  printf("\n");
     }
   }
   if (!i)
-    printl2(0, _("  No variables\n"));
+    printf(_("  No variables"));
 
-  printl2(0, _
-	  ("+------------------+----------+----+----+----------+----------+\n"));
+  printf(_("+------------------+----------+----+----+----------+----------+"));
+  printf("\n");
 }
 
-static void dirlist_display_apps(TNode * tree)
+static void dirlist_display_apps(TNode* tree)
 {
+	TNode *apps = tree;
+  TreeInfo *info = (TreeInfo *)(tree->data);
   int i, k;
-  TNode *apps = tree;
+  char trans[10];
 
-  printl2(0,   "+------------------+----------+----+----+----------+\n");
-  printl2(0, _("| B. name          | T. name  |Attr|Type| Size     |\n"));
-  printl2(0,   "+------------------+----------+----+----+----------+\n");
+  printf(  "+------------------+----------+----+----+----------+\n");
+  printf(_("| B. name          | T. name  |Attr|Type| Size     |\n"));
+  printf(  "+------------------+----------+----+----+----------+\n");
 
-  for (i = 0; i < (int)t_node_n_children(apps); i++) {
+  for (i = 0; i < (int)t_node_n_children(apps); i++) 
+  {
     TNode *child = t_node_nth_child(apps, i);
+    VarEntry *ve = (VarEntry *) (child->data);
 
-    TiVarEntry *ve = (TiVarEntry *) (child->data);
+	tifiles_transcode_varname (info->model, trans, ve->name, ve->type);
 
-    printl2(0, "| ");
-    for (k = 0; k < 8; k++) {
-      printl2(0, "%02X", (uint8_t) (ve->name)[k]);
-    }
-    printl2(0, " | ");
-    printl2(0, "%8s", ve->trans);
-    printl2(0, " | ");
-    printl2(0, "%2i", ve->attr);
-    printl2(0, " | ");
-    printl2(0, "%02X", ve->type);
-    printl2(0, " | ");
-    printl2(0, "%08X", ve->size);
-    printl2(0, " |\n");
+    printf("| ");
+    for (k = 0; k < 8; k++)
+      printf("%02X", (uint8_t) (ve->name)[k]);
+    printf(" | ");
+    printf("%8s", trans);
+    printf(" | ");
+    printf("%2i", ve->attr);
+    printf(" | ");
+    printf("%02X", ve->type);
+    printf(" | ");
+    printf("%08X", ve->size);
+    printf(" |");
+	printf("\n");
   }
   if (!i)
-    printl2(0, _("  No applications\n"));
+  {
+	printf(_("+ No applications  |          |    |    |          +"));
+	printf("\n");
+  }
 
-  printl2(0, "+------------------+----------+----+----+----------+\n");
-  printl2(0, "\n");
+  printf("+------------------+----------+----+----+----------+");
+  printf("\n");
 }
 
-
-static void dirlist_display1(TNode * tree)
+/**
+ * ticalcs_dirlist_display:
+ * @tree: the tree to display (var or app).
+ *
+ * Display to stdout the tree content formatted in a tab.
+ *
+ * Return value: none.
+ **/
+TIEXPORT void TICALL ticalcs_dirlist_display(TNode* tree)
 {
-  TNode *vars, *apps;
+	TreeInfo *info = (TreeInfo *)(tree->data);
+	char *node_name = info->type;
+  
+	if (tree == NULL)
+		return;
 
-  if (tree == NULL)
-    return;
-
-  // List variables
-  vars = t_node_nth_child(tree, 0);
-  if (vars == NULL)
-    return;
-
-  dirlist_display_vars(vars);
-
-  // List applications
-  apps = t_node_nth_child(tree, 1);
-  if (apps == NULL)
-    return;
-
-  dirlist_display_apps(apps);
-}
-
-
-TIEXPORT void TICALL ticalc_dirlist_display(TNode * tree)
-{
-  if (tree == NULL)
-    return;
-
-  // Determine tree format
-  if (tree->data == NULL) {
-    printl2(0, "dirlist form #1: vars & apps\n");
-    dirlist_display1(tree);
-  } else {
-    char *node_name = (char *) tree->data;
-
-    if (!strcmp(node_name, VAR_NODE_NAME)) {
-	    printl2(0, "dirlist form #2: vars\n");
-	    dirlist_display_vars(tree);
-    } else if (!strcmp(node_name, APP_NODE_NAME)) {
-	    printl2(0, "dirlist form #2: apps\n");
+    if (!strcmp(node_name, VAR_NODE_NAME))
+		dirlist_display_vars(tree);
+    else if (!strcmp(node_name, APP_NODE_NAME))
 	    dirlist_display_apps(tree);
-    } else {
-      printl2(2, "invalid tree !\n");
-      printl2(2, "Program halted before crashing...\n");
-      exit(-1);
-    }
-  }
 }
 
-
-TIEXPORT TiVarEntry *TICALL ticalc_check_if_var_exists(TNode * tree,
-						       char *full_name)
+/**
+ * ticalcs_dirlist_var_exist:
+ * @tree: the tree to display (var or app).
+ * @full_name: the full name of var to search for.
+ *
+ * Parse the tree for the given varname & folder.
+ *
+ * Return value: a pointer on the #VarEntry found or NULL if not found.
+ **/
+TIEXPORT VarEntry *TICALL ticalcs_dirlist_var_exist(TNode* tree, char *full_name)
 {
-  int i, j;
-  TNode *vars;
-  char fldname[18];
-  char varname[18];
+	int i, j;
+	TNode *vars = tree;
+	char fldname[18];
+	char varname[18];
+	TreeInfo *info = (TreeInfo *)(tree->data);
+	char *node_name = info->type;
 
-  strcpy(fldname, tifiles_get_fldname(full_name));
-  strcpy(varname, tifiles_get_varname(full_name));
+	strcpy(fldname, tifiles_get_fldname(full_name));
+	strcpy(varname, tifiles_get_varname(full_name));
 
-  if (tree == NULL)
-    return NULL;
+	if (tree == NULL)
+		return NULL;
 
-  if (tree->data == NULL) {	// old format
-    vars = t_node_nth_child(tree, 0);
-    if (vars == NULL)
-      return NULL;
-  } else {			// new format
-    vars = tree;
-    if (strcmp(vars->data, VAR_NODE_NAME))
-      return 0;
-  }
+	if (strcmp(node_name, VAR_NODE_NAME))
+		return NULL;
 
-  for (i = 0; i < (int)t_node_n_children(vars); i++)	// parse folders
-  {
-    TNode *parent = t_node_nth_child(vars, i);
-    TiVarEntry *fe = (TiVarEntry *) (parent->data);
+	for (i = 0; i < (int)t_node_n_children(vars); i++)	// parse folders
+	{
+		TNode *parent = t_node_nth_child(vars, i);
+		VarEntry *fe = (VarEntry *) (parent->data);
 
-    if ((fe != NULL) && strcmp(fe->name, fldname))
-      continue;
+		if ((fe != NULL) && strcmp(fe->name, fldname))
+			continue;
 
-    for (j = 0; j < (int)t_node_n_children(parent); j++)	//parse variables
-    {
-      TNode *child = t_node_nth_child(parent, j);
-      TiVarEntry *ve = (TiVarEntry *) (child->data);
+		for (j = 0; j < (int)t_node_n_children(parent); j++)	//parse variables
+		{
+			TNode *child = t_node_nth_child(parent, j);
+			VarEntry *ve = (VarEntry *) (child->data);
 
-      if (!strcmp(ve->name, varname))
-	return ve;
-    }
-  }
+			if (!strcmp(ve->name, varname))
+				return ve;
+		}
+	}
 
-  return NULL;
+	return NULL;
 }
 
-
-TIEXPORT TiVarEntry *TICALL ticalc_check_if_app_exists(TNode * tree,
-						       char *appname)
+/**
+ * ticalcs_dirlist_app_exist:
+ * @tree: the tree to display (var or app).
+ * @app_name: the name of app to search for.
+ *
+ * Parse the tree for the given application name.
+ *
+ * Return value: a pointer on the #VarEntry found or NULL if not found.
+ **/
+TIEXPORT VarEntry *TICALL ticalcs_dirlist_app_exist(TNode* tree, char *appname)
 {
-  int i;
-  TNode *apps;
+	int i;
+	TNode *apps = tree;
+	TreeInfo *info = (TreeInfo *)(apps->data);
+	char *node_name = info->type;
 
-  if (tree == NULL)
-    return NULL;
+	if (tree == NULL)
+		return NULL;
 
-  if (tree->data == NULL) {	// old format
-    apps = t_node_nth_child(tree, 1);
-    if (apps == NULL)
-      return NULL;
-  } else {			// new format
-    apps = tree;
-    if (strcmp(apps->data, APP_NODE_NAME))
-      return 0;
-  }
+	if (strcmp(node_name, APP_NODE_NAME))
+		return NULL;
 
-  for (i = 0; i < (int)t_node_n_children(apps); i++) {
-    TNode *child = t_node_nth_child(apps, i);
+	for (i = 0; i < (int)t_node_n_children(apps); i++) 
+	{
+		TNode *child = t_node_nth_child(apps, i);
+		VarEntry *ve = (VarEntry *) (child->data);
 
-    TiVarEntry *ve = (TiVarEntry *) (child->data);
+		if (!strcmp(ve->name, appname))
+			return ve;
+	}
 
-    if (!strcmp(ve->name, appname))
-      return ve;
-  }
-
-  return NULL;
+	return NULL;
 }
 
-
-TIEXPORT int TICALL ticalc_dirlist_numvars(TNode * tree)
+/**
+ * ticalcs_dirlist_num_vars:
+ * @tree: a tree (var or app).
+ *
+ * Count how many variables are listed in the tree.
+ *
+ * Return value: the number of variables.
+ **/
+TIEXPORT int TICALL ticalcs_dirlist_num_vars(TNode* tree)
 {
-  int i, j;
-  TNode *vars;
-  int nvars = 0;
+	int i, j;
+	TNode *vars = tree;
+	int nvars = 0;
+	TreeInfo *info = (TreeInfo *)(tree->data);
+	char *node_name = info->type;
 
-  if (tree == NULL)
-    return 0;
+	if (tree == NULL)
+		return 0;
 
-  // List variables
-  if (tree->data == NULL) {	// old format
-    vars = t_node_nth_child(tree, 0);
-    if (vars == NULL)
-      return 0;
-  } else {			// new format
-    vars = tree;
-    if (strcmp(vars->data, VAR_NODE_NAME))
-      return 0;
-  }
+	if (strcmp(node_name, VAR_NODE_NAME))
+		return 0;
 
-  for (i = 0; i < (int)t_node_n_children(vars); i++)	// parse folders
-  {
-    TNode *parent = t_node_nth_child(vars, i);
+	for (i = 0; i < (int)t_node_n_children(vars); i++)	// parse folders
+	{
+		TNode *parent = t_node_nth_child(vars, i);
 
-    for (j = 0; j < (int)t_node_n_children(parent); j++)	//parse variables
-    {
-      nvars++;
-    }
-  }
+		for (j = 0; j < (int)t_node_n_children(parent); j++)	//parse variables
+			nvars++;
+	}
 
-  return nvars;
+	return nvars;
 }
 
-
-TIEXPORT int TICALL ticalc_dirlist_memused(TNode * tree)
+/**
+ * ticalcs_dirlist_mem_used:
+ * @tree: a tree (var only).
+ *
+ * Count how much memory is used by variables listed in the tree.
+ *
+ * Return value: size of all variables in bytes.
+ **/
+TIEXPORT int TICALL ticalcs_dirlist_mem_used(TNode* tree)
 {
-  int i, j;
-  TNode *vars;
-  uint32_t mem = 0;
+	int i, j;
+	TNode *vars = tree;
+	uint32_t mem = 0;
 
-  if (tree == NULL)
-    return 0;
+	if (tree == NULL)
+		return 0;
 
-  // List variables
-  vars = t_node_nth_child(tree, 0);
-  if (vars == NULL)
-    return 0;
+	if (strcmp(((TreeInfo *)(vars->data))->type, VAR_NODE_NAME))
+		return 0;
 
-  for (i = 0; i < (int)t_node_n_children(vars); i++)	// parse folders
-  {
-    TNode *parent = t_node_nth_child(vars, i);
+	for (i = 0; i < (int)t_node_n_children(vars); i++)	// parse folders
+	{
+	    TNode *parent = t_node_nth_child(vars, i);
 
-    for (j = 0; j < (int)t_node_n_children(parent); j++)	//parse variables
-    {
-      TNode *child = t_node_nth_child(parent, j);
-      TiVarEntry *ve = (TiVarEntry *) (child->data);
+		for (j = 0; j < (int)t_node_n_children(parent); j++)	//parse variables
+		{
+			TNode *child = t_node_nth_child(parent, j);
+			VarEntry *ve = (VarEntry *) (child->data);
 
-      mem += ve->size;
-    }
-  }
+			mem += ve->size;
+		}
+	}
 
-  return mem;
+	return mem;
 }
 
+// Reminder of new format...
 /*
-  The returned array is a NULL terminated array of string.
-  It is pre-initialized with ACT_OVER(write).
-*/
-TIEXPORT char **TICALL ticalc_action_create_array(int num_entries)
-{
-  char **ptr;
-  int i;
-
-  ptr = (char **) calloc(num_entries + 1, sizeof(char *));
-  if (ptr == NULL)
-    return NULL;
-
-  for (i = 0; i < num_entries; i++) {
-    ptr[i] = (char *) calloc(18, sizeof(char));
-    ptr[i][0] = ACT_OVER;
-  }
-
-  return ptr;
-}
-
-TIEXPORT void TICALL ticalc_action_destroy_array(char **array)
-{
-  int i;
-
-  if (array == NULL)
-    return;
-
-  for (i = 0; array[i] != NULL; i++)
-    free(array[i]);
-
-  free(array);
-}
-
-/*
-  Implement new tree format by using old functions (maintains compatibility)
-  Simply break the tree into 2 sub-trees but take care of memory.
- */
-TicalcFncts *tcf;
-
-int tixx_directorylist2(TNode ** vars, TNode ** apps, uint32_t * memory)
+int tixx_directorylist2(TNode** vars, TNode** apps, uint32_t * memory)
 {
   TNode *tree;
   TNode *var_node, *app_node;
@@ -413,3 +392,17 @@ int tixx_directorylist2(TNode ** vars, TNode ** apps, uint32_t * memory)
 
   return 0;
 }
+*/
+
+
+/* Dirlist format */
+/*
+
+  top = NULL (data = TreeInfo)
+  |
+  + folder (= NULL if TI8x, data = VarEntry if TI9x)
+	  |
+	  +- var1 (data = VarEntry)
+	  +- var2 (data = VarEntry)
+
+*/

@@ -2,7 +2,7 @@
 /* $Id$ */
 
 /*  libticalcs - Ti Calculator library, a part of the TiLP project
- *  Copyright (C) 1999-2004  Romain Lievin
+ *  Copyright (C) 1999-2005  Romain Liévin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,249 +20,310 @@
  */
 
 /*
-  This unit provides probing support.
+	Probing support.
 */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "ticalcs.h"
+#include "logging.h"
+#include "dbus_pkt.h"
+#include "error.h"
 #include "gettext.h"
+#include "pause.h"
+#include "calc_xx.h"
 
-#include "export.h"
-#include "headers.h"
-#include "calc_err.h"
-#include "calc_int.h"
-#include "externs.h"
-#include "packets.h"
-#include "update.h"
-#include "printl.h"
+#define DEAD_TIME	250
 
 /* 
-   Get the first uint8_t sent by the calc (Machine ID)
+	Get the first byte sent by the calc (Machine ID)
 */
-int tixx_recv_ACK(uint8_t * mid)
+int tixx_recv_ACK(CalcHandle* handle, uint8_t* mid)
 {
-  uint8_t host, cmd;
-  uint16_t status;
+	uint8_t host, cmd;
+	uint16_t length;
+	uint8_t buffer[5];
 
-  printl2(0, " TI->PC: ACK");
-  TRYF(recv_packet(&host, &cmd, &status, NULL));
+	TRYF(dbus_recv_2(handle, &host, &cmd, &length, buffer));
+	ticalcs_info(" TI->PC: ACK");
 
-  *mid = host;
-  if (cmd != CMD_ACK)
-    return ERR_INVALID_CMD;
+	*mid = host;
 
-  return 0;
+	if (cmd == CMD_SKP)
+		return ERR_VAR_REJECTED;
+
+	return 0;
 }
 
-
-/* 
-   !!! Obsolete !!!
-   This function try to detect the calculator type by requesting a screedump
-   and analyzing the Machine ID uint8_t. It supposes that the communication port 
-   is correctly initialized and your calc is on.
-
-   PC: 08  6D 00 00		PC request a screen dump
-   TI: MId 56 00 00		TI reply OK
-   
-   Beware: the call sequence is very important: 89, 92+, 92, 86, 85, 83, 82 !!!
-*/
-TIEXPORT int TICALL ticalc_detect_calc(TicalcType * calc_type)
+/**
+ * ticalcs_probe_calc_2:
+ * @handle: a previously allocated handle
+ * @type: the calculator model
+ *
+ * This function tries and detect the calculator type for non-silent models
+ * by requesting a screedump and analyzing the Machine ID. 
+ * It supposes your calc is on and plugged.
+ * 
+ * PC: 08  6D 00 00		PC request a screen dump
+ * TI: MId 56 00 00		TI reply OK
+ *
+ * Beware: the call sequence is very important: 86, 85, 83, 82 !!!
+ *
+ * Return value: 0 if ready else an error code.
+ **/
+TIEXPORT int TICALL ticalcs_probe_calc_2(CalcHandle* handle, CalcModel* model)
 {
-  int err;
-  uint8_t data;
+	CalcHandle* h = handle;
+	int err;
+	uint8_t data;
 
-  printl2(0, _("Probing calculator...\n"));
+	ticalcs_info(_("Probing calculator...\n"));
 
-  /* Test for a TI 89 or a TI92+ */
-  printl2(0, _("Trying TI89/TI92+... "));
-  TRYF(cable->open());
+	/* Test for a TI86 before a TI85 */
+	ticalcs_info(_("Check for TI86... "));
+	TRYF(dbus_send(h, PC_TI86, CMD_SCR, 2, NULL));
+	err = tixx_recv_ACK(h, &data);
 
-  printl2(0, " PC->TI: SCR\n");
-  TRYF(send_packet(PC_TI89, CMD_SCR, 2, NULL));
-  err = tixx_recv_ACK(&data);
+	ticalcs_info("<%02X-%02X> ", PC_TI86, data);
 
-  printl2(0, "<%02X/%02X> ", PC_TI89, data);
-  TRYF(cable->close());
+	if (!err && (data == TI86_PC)) 
+	{
+		ticalcs_info("OK !\n");
+		*model = CALC_TI86;
 
-  if (!err && (data == TI89_PC)) {
-    printl2(0, "OK (TI89) !\n");
-    *calc_type = CALC_TI89;
+		return 0;
+	} 
+	else 
+	{
+		ticalcs_info("NOK.\n");
+		ticables_cable_reset(handle->cable);
+		PAUSE(DEAD_TIME);
+	}
 
-    return 0;
-  } else if (!err && (data == TI92p_PC)) {
-    printl2(0, "OK (TI92+) !\n");
-    *calc_type = CALC_TI92P;
+	/* Test for a TI85 */
+	ticalcs_info(_("Check for TI85... "));
+	TRYF(dbus_send(h, PC_TI85, CMD_SCR, 2, NULL));
+	err = tixx_recv_ACK(h, &data);
 
-    return 0;
-  } else {
-    printl2(0, "NOK.\n");
-  }
+	ticalcs_info("<%02X-%02X> ", PC_TI85, data);
 
-  /* Test for a TI92 */
-  printl2(0, _("Trying TI92... "));
-  TRYF(send_packet(PC_TI92, CMD_SCR, 2, NULL));
-  err = tixx_recv_ACK(&data);
+	if (!err && (data == TI85_PC)) 
+	{
+		ticalcs_info("OK !\n");
+		*model = CALC_TI85;
 
-  printl2(0, "<%02X/%02X> ", PC_TI92, data);
-  TRYF(cable->close());
+		return 0;
+	} 
+	else 
+	{
+		ticalcs_info("NOK.\n");
+		ticables_cable_reset(handle->cable);
+		PAUSE(DEAD_TIME);
+	}
 
-  if (!err && (data == TI92_PC)) {
-    printl2(0, "OK !\n");
-    *calc_type = CALC_TI92;
+	/* Test for a TI83 before a TI82 */
+	ticalcs_info(_("Check for TI83... "));
+	TRYF(dbus_send(h, PC_TI83, CMD_SCR, 2, NULL));
+	err = tixx_recv_ACK(h, &data);
 
-    return 0;
-  } else {
-    printl2(0, "NOK.\n");
-  }
+	ticalcs_info("<%02X-%02X> ", PC_TI83, data);
 
-  /* Test for a TI86 before a TI85 */
-  printl2(0, _("Trying TI86... "));
-  TRYF(cable->open());
-  TRYF(send_packet(PC_TI86, CMD_SCR, 2, NULL));
-  err = tixx_recv_ACK(&data);
+	if (!err && (data == TI83_PC)) 
+	{
+		ticalcs_info("OK !\n");
+		*model = CALC_TI83;
 
-  printl2(0, "<%02X/%02X> ", PC_TI86, data);
-  TRYF(cable->close());
+		return 0;
+	} 
+	else 
+	{
+		ticalcs_info("NOK.\n");
+		ticables_cable_reset(handle->cable);
+		PAUSE(DEAD_TIME);
+	}
 
-  if (!err && (data == TI86_PC)) {
-    printl2(0, "OK !\n");
-    *calc_type = CALC_TI86;
+	/* Test for a TI82 */
+	ticalcs_info(_("Check for TI82... "));
+	TRYF(dbus_send(h, PC_TI83, CMD_SCR, 2, NULL));
+	err = tixx_recv_ACK(h, &data);
 
-    return 0;
-  } else {
-    printl2(0, "NOK.\n");
-  }
+	ticalcs_info("<%02X-%02X> ", PC_TI82, data);
 
-  /* Test for a TI85 */
-  printl2(0, _("Trying TI85... "));
-  TRYF(cable->open());
-  TRYF(send_packet(PC_TI85, CMD_SCR, 2, NULL));
-  err = tixx_recv_ACK(&data);
+	if (!err && (data == TI82_PC)) 
+	{
+		ticalcs_info("OK !\n");
+		*model = CALC_TI82;
 
-  printl2(0, "<%02X/%02X> ", PC_TI85, data);
-  TRYF(cable->close());
+		return 0;
+	} 
+	else 
+	{
+		ticalcs_info("NOK.\n");
+		ticables_cable_reset(handle->cable);
+		PAUSE(DEAD_TIME);
+	}
 
-  if (!err && (data == TI85_PC)) {
-    printl2(0, "OK !\n");
-    *calc_type = CALC_TI85;
-
-    return 0;
-  } else {
-    printl2(0, "NOK.\n");
-  }
-
-  /* Test for a TI83 before a TI82 */
-  printl2(0, _("Trying TI83... "));
-  TRYF(cable->open());
-  TRYF(send_packet(PC_TI83, CMD_SCR, 2, NULL));
-  err = tixx_recv_ACK(&data);
-
-  printl2(0, "<%02X/%02X> ", PC_TI82, data);
-  TRYF(cable->close());
-
-  if (!err && (data == TI83_PC)) {
-    printl2(0, "OK !\n");
-    *calc_type = CALC_TI83;
-
-    return 0;
-  } else {
-    printl2(0, "NOK.\n");
-  }
-
-  /* Test for a TI82 */
-  printl2(0, _("Trying TI82... "));
-  TRYF(cable->open());
-  TRYF(send_packet(PC_TI83, CMD_SCR, 2, NULL));
-  err = tixx_recv_ACK(&data);
-
-  printl2(0, "<%02X> ", data);
-  TRYF(cable->close());
-
-  if (!err && (data == TI82_PC)) {
-    printl2(0, "OK !\n");
-    *calc_type = CALC_TI82;
-
-    return 0;
-  } else {
-    printl2(0, "NOK.\n");
-  }
-  /* Next calc */
-
-  return 0;
+	return 0;
 }
 
-
-/*
-  Check if the calculator is ready and detect the type.
-  Works only with TI73/83+/89/92+ calculators (FLASH). It could work with an 
-  V200 but it returns the same ID as TI92+...
-  Practically, call this function first, and call tixx_isready next.
-  Return 0 if successful, 0 otherwise.
-*/
-TIEXPORT int TICALL ticalc_isready(TicalcType * calc_type)
+/**
+ * ticalcs_probe_calc_1:
+ * @handle: a previously allocated handle
+ * @type: the calculator model
+ *
+ * Check if the calculator is ready and detect the type.
+ * Works only with FLASH calculators and a AMS2.08 (?!) mini by requesting
+ * version. A previous version was based on MID but TI83+/84+, TI89/TI89t, TI92+/V200 
+ * could not be distinguished ;-(
+ *
+ * Return value: 0 if ready else an error code.
+ **/
+TIEXPORT int TICALL ticalcs_probe_calc_1(CalcHandle* handle, CalcModel* model)
 {
-  uint8_t host, cmd, st1, st2;
-  uint16_t status;
-  TicalcType ct;
+	uint8_t host, cmd;
+	uint16_t status;
+	uint8_t buffer[256];
+	int i, err;
+	CalcInfos infos;
 
-  ticalc_get_calc(&ct);
-  if (
-	  (ct != CALC_TI73) && (ct != CALC_TI83P) && (ct != CALC_TI84P) &&
-	  (ct != CALC_TI89) && (ct != CALC_TI89T) && (ct != CALC_TI92P) && 
-	  (ct != CALC_V200)
-	 )
-    return 0;
+	// init value
+	*model = CALC_NONE;
 
-  TRYF(cable->open());
-  printl2(0, _("Is calculator ready (and check type) ?\n"));
+	// test for FLASH hand-helds (00 68 00 00 -> XX 56 00 00)
+	// where XX is 0x98: TI89/89t, 0x88: TI92+/V200, 0x73: TI83+/84+, 0x74: TI73
+	ticalcs_info(_("Check for TIXX... "));
+	for(i = 0; i < 2; i++)
+	{		
+		ticalcs_info(" PC->TI: RDY?");
+		err = dbus_send(handle, PC_TIXX, CMD_RDY, 2, NULL);
+		if(err) continue;
 
-  printl2(0, " PC->TI: RDY?\n");
-  TRYF(send_packet(PC_TIXX, CMD_RDY, 2, NULL));
+		err = dbus_recv_2(handle, &host, &cmd, &status, buffer);
+		ticalcs_info(" TI->PC: ACK");
+		if(err) continue;
 
-  printl2(0, " TI->PC: ACK");
-  TRYF(cable->get(&host));
-  TRYF(cable->get(&cmd));
-  TRYF(cable->get(&st1));
-  TRYF(cable->get(&st2));
-  status = (st1 << 8) | st2;
-  if (cmd != CMD_ACK)
-    return ERR_INVALID_CMD;
-  printl2(0, _("\nStatus = %04X\n"), status);
+		break;
+	}
+	
+	// test for TI92 (09 68 00 00 -> 89 56 00 00)
+	if(err)
+	{
+		ticalcs_info(_("Check for TI92... "));
+		ticables_cable_reset(handle->cable);
+		PAUSE(DEAD_TIME);	// needed !
 
-  // 0x98: TI89, 0x88: TI92+/V200, 0x73: TI83+, 0x74: TI73
-  switch (host) {
-    //case V200_PC:  *calc_type = CALC_V200; break;
-  case TI92p_PC:
-    *calc_type = CALC_TI92P;
-    break;
-  case TI89_PC:
-    *calc_type = CALC_TI89;
-    break;
-  case TI83p_PC:
-    *calc_type = CALC_TI83P;
-    break;
-  case TI73_PC:
-    *calc_type = CALC_TI73;
-    break;
-  default:
-    *calc_type = CALC_NONE;
-    return ERR_INVALID_HOST;
-    break;
-  }
+		for(i = 0; i < 2; i++)
+		{
+			ticalcs_info(" PC->TI: RDY?");
+			err = dbus_send(handle, PC_TI92, CMD_RDY, 2, NULL);
+			if(err) continue;
 
-  if (cmd != CMD_ACK)
-    return ERR_INVALID_CMD;
-  if ((status & 1) != 0)
-    return ERR_NOT_READY;
+			err = dbus_recv_2(handle, &host, &cmd, &status, buffer);
+			ticalcs_info(" TI->PC: ACK");
+			if(err) continue;
 
-  printl2(0, _("The calculator is ready.\n"));
-  printl2(0, _("Calculator type: %s\n"),
-	  (*calc_type == CALC_TI83P) ? "TI83+" :
-	  (*calc_type == CALC_TI84P) ? "TI84+" :
-	  (*calc_type == CALC_TI89) ? "TI89" :
-	  (*calc_type == CALC_TI89T) ? "TI89t" :
-	  (*calc_type == CALC_TI92P) ? "TI92+" :
-	  (*calc_type == CALC_V200) ? "V200" : "???");
+			break;
+		}
 
-  return 0;
+		if(!err)
+			*model = CALC_TI92;
+	}
+
+	if (cmd != CMD_ACK)
+		return ERR_INVALID_CMD;
+
+	if ((status & 1) != 0)
+		return ERR_NOT_READY;
+	
+	// test for TI9x FLASH hand-helds again (request version and analyze HW_ID)
+	if(!err && (host != TI73_PC) && (host != TI83p_PC))
+	{
+		ticalcs_info(_("Check for TI9X... "));
+
+		handle->model = CALC_TI89;
+		handle->calc = (CalcFncts *)&calc_89;
+
+		memset(&infos, 0, sizeof(CalcInfos));		
+		TRYF(ticalcs_calc_get_version(handle, &infos));
+
+		switch(infos.hw_id)
+		{
+		case 1: *model = CALC_TI92P; break;
+		case 3: *model = CALC_TI89;  break;
+		case 8: *model = CALC_V200;  break;
+		case 9: *model = CALC_TI89T; break;
+		default: break;
+		}
+	}
+	else
+	{
+		ticalcs_info(_("Check for TI8X... "));
+
+		handle->model = CALC_TI83P;
+		handle->calc = (CalcFncts *)&calc_83p;
+
+		memset(&infos, 0, sizeof(CalcInfos));
+		TRYF(ticalcs_calc_get_version(handle, &infos));
+
+		switch (infos.hw_id) 
+		{
+		case 0: *model = CALC_TI83P; break;
+		case 1: *model = CALC_TI83P; break;	// SE
+		case 2: *model = CALC_TI84P; break;
+		case 3: *model = CALC_TI84P; break;	// SE
+		default: break;
+		}
+	}
+
+	ticalcs_info(_("Calculator type: %s"), tifiles_model_to_string(*model));
+
+	return 0;
+}
+
+extern const CalcUpdate default_update;
+
+/**
+ * ticalcs_probe_calc:
+ * @cable: a valid (=opened/attached) link cable handle
+ * @model: the calculator model which have been detected
+ *
+ * This function attempts to detect the calculator model plugged onto the cable.
+ * It works in a heuristic fashion.
+ *
+ * Return value: 0 if ready else an error code.
+ **/
+TIEXPORT int TICALL ticalcs_probe_calc  (CableHandle* cable, CalcModel* model)
+{
+	CalcHandle calc;
+	int err = 0;
+
+	// Hack: we construct the structure here because we don't really need it.
+	// I want to use ticalcs functions with a non-fixed calculator
+	memset(&calc, 0, sizeof(CalcHandle));
+	calc.model = *model = CALC_NONE;
+	calc.updat = (CalcUpdate *)&default_update;
+	calc.priv2 = (uint8_t *)malloc(65536 + 4);
+	calc.cable = cable;
+	calc.open = !0;
+
+	// first: search for FLASH hand-helds (fast)
+	err = ticalcs_probe_calc_1(&calc, model);
+	if(!err && (*model != CALC_NONE))
+	{
+		free(calc.priv2);
+		return 0;
+	}
+
+	// second: search for other calcs (slow)
+	err = ticalcs_probe_calc_2(&calc, model);
+	if(err)
+	{
+		free(calc.priv2);
+		return err;
+	}
+
+	free(calc.priv2);
+	return 0;
 }

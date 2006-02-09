@@ -2,7 +2,7 @@
 /* $Id$ */
 
 /*  libticalcs - Ti Calculator library, a part of the TiLP project
- *  Copyright (C) 1999-2004  Romain Lievin
+ *  Copyright (C) 1999-2005  Romain Liévin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,32 +19,56 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef __CMDS_92__
-#define __CMDS_92__
+#ifndef __TICALCS_CMD92__
+#define __TICALCS_CMD92__
 
+int ti92_send_VAR_h(CalcHandle*, uint32_t varsize, uint8_t vartype, char *varname);
+int ti92_send_CTS_h(CalcHandle*);
+int ti92_send_XDP_h(CalcHandle*, int length, uint8_t * data);
+int ti92_send_SKP_h(CalcHandle*, uint8_t rej_code);
+int ti92_send_ACK_h(CalcHandle*);
+int ti92_send_ERR_h(CalcHandle*);
+int ti92_send_RDY_h(CalcHandle*);
+int ti92_send_SCR_h(CalcHandle*);
+int ti92_send_CNT_h(CalcHandle*);
+int ti92_send_KEY_h(CalcHandle*, uint16_t scancode);
+int ti92_send_EOT_h(CalcHandle*);
+int ti92_send_REQ_h(CalcHandle*, uint32_t varsize, uint8_t vartype, char *varname);
+int ti92_send_RTS_h(CalcHandle*, uint32_t varsize, uint8_t vartype, char *varname);
 
-int ti92_send_VAR(uint32_t varsize, uint8_t vartype, char *varname);
-int ti92_send_CTS(void);
-int ti92_send_XDP(int length, uint8_t * data);
-int ti92_send_SKIP(uint8_t rej_code);
-int ti92_send_ACK(void);
-int ti92_send_ERR(void);
-int ti92_send_RDY(void);
-int ti92_send_SCR(void);
-int ti92_send_CONT(void);
-int ti92_send_KEY(uint16_t scancode);
-int ti92_send_EOT(void);
-int ti92_send_REQ(uint32_t varsize, uint8_t vartype, char *varname);
-int ti92_send_RTS(uint32_t varsize, uint8_t vartype, char *varname);
+int ti92_recv_VAR_h(CalcHandle*, uint32_t * varsize, uint8_t * vartype, char *varname);
+int ti92_recv_CTS_h(CalcHandle*);
+int ti92_recv_SKP_h(CalcHandle*, uint8_t * rej_code);
+int ti92_recv_XDP_h(CalcHandle*, uint32_t * length, uint8_t * data);
+int ti92_recv_ACK_h(CalcHandle*, uint16_t * status);
+int ti92_recv_CNT_h(CalcHandle*);
+int ti92_recv_EOT_h(CalcHandle*);
+int ti92_recv_RTS_h(CalcHandle*, uint32_t * varsize, uint8_t * vartype, char *varname);
 
-int ti92_recv_VAR(uint32_t * varsize, uint8_t * vartype, char *varname);
-int ti92_recv_CTS(void);
-int ti92_recv_SKIP(uint8_t * rej_code);
-int ti92_recv_XDP(uint32_t * length, uint8_t * data);
-int ti92_recv_ACK(uint16_t * status);
-int ti92_recv_CONT(void);
-int ti92_recv_EOT(void);
-int ti92_recv_RTS(uint32_t * varsize, uint8_t * vartype, char *varname);
+// ---
 
+#define ti92_send_VAR(a,b,c)		ti92_send_VAR_h(handle, a, b, c)
+#define ti92_send_CTS()				ti92_send_CTS_h(handle)
+#define ti92_send_XDP(a,b)			ti92_send_XDP_h(handle, a, b)
+#define ti92_send_SKP(a)			ti92_send_SKP_h(handle, a)
+#define ti92_send_ACK()				ti92_send_ACK_h(handle)
+#define ti92_send_ERR()				ti92_send_ERR_h(handle)
+#define ti92_send_RDY()				ti92_send_RDY_h(handle)
+#define ti92_send_SCR()				ti92_send_SCR_h(handle)
+#define ti92_send_CNT()				ti92_send_CNT(handle)
+#define ti92_send_KEY(a)			ti92_send_KEY_h(handle, a)
+#define ti92_send_EOT()				ti92_send_EOT_h(handle)
+#define ti92_send_REQ(a,b,c)		ti92_send_REQ_h(handle, a, b, c)
+#define ti92_send_RTS(a,b,c)		ti92_send_RTS_h(handle, a, b, c)
+
+#define ti92_recv_VAR(a,b,c)		ti92_recv_VAR_h(handle, a, b, c)		
+#define ti92_recv_CTS()				ti92_recv_CTS_h(handle)
+#define ti92_recv_SKP(a)			ti92_recv_SKP_h(handle, a)
+#define ti92_recv_XDP(a,b)			ti92_recv_XDP_h(handle, a , b)
+#define ti92_recv_ACK(a)			ti92_recv_ACK_h(handle, a)
+#define ti92_recv_CNT()				ti92_recv_CNT_h(handle)
+#define ti92_recv_EOT()				ti92_recv_EOT_h(handle)
+#define ti92_recv_RTS(a,b,c)		ti92_recv_RTS_h(handle, a, b, c)
 
 #endif
+
